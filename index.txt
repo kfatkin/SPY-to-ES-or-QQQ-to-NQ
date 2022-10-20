@@ -1,0 +1,90 @@
+// Created by Fatty Trades
+//@version=5
+// This indicator coverts SPY price targets to ES or QQQ price targets to NQ / MNQ
+indicator(title="SPY to ES or QQQ to NQ", shorttitle = "SPY to ES or QQQ to NQ", overlay=true)
+
+// Inputs
+is_spy = input.bool(defval = true, title = "Convert SPY?", tooltip = "Uncheck this box if converting QQQ to NQ instead of SPY to ES")
+input_line_pt1 = input.price(defval = 0.0 , title = "PT 1")
+input_line_pt2 = input.price(defval = 0.0 , title = "PT 2")
+input_line_pt3 = input.price(defval = 0.0 , title = "PT 3")
+input_line_pt4 = input.price(defval = 0.0 , title = "PT 4")
+input_line_pt5 = input.price(defval = 0.0 , title = "PT 5")
+input_line_pt6 = input.price(defval = 0.0 , title = "PT 6")
+input_line_pt7 = input.price(defval = 0.0 , title = "PT 7")
+input_line_pt8 = input.price(defval = 0.0 , title = "PT 8")
+input_line_pt9 = input.price(defval = 0.0 , title = "PT 9")
+input_line_pt10 = input.price(defval = 0.0 , title = "PT 10")
+input_TablePosition = input.string(defval = "Top Right", title = "Table Position", options = ["Top Right", "Top Center", "Top Left", "Middle Right", "Middle Center", "Middle Left", "Bottom Right", "Bottom Center", "Bottom Left"], tooltip = "Position of the table") 
+input_TableTextSize = input.string(defval = "Normal", title = "Table Font Size", options = ["Tiny", "Small", "Normal", "Large", "Huge"], tooltip = "Font size for the status box") 
+input_vwap_source = input.source(defval = hlc3, title = "VWAP Source", tooltip = "Source used to calculate VWAP")
+input_smoothing = input.int(defval = 100, title = "Line Smoothing", minval = 1 , maxval = 600, tooltip = "Min 1, Max 600. SMA to smooth lines, evens out the calculation flucations. VWAP is not smoothed.") 
+input_vwap_smoothing = input.int(defval = 3, title = "VWAP Smoothing", minval = 0 , maxval = 9, tooltip = "Min 0, Max 9. SMA to smooth VWAP line, evens out the calculation flucations but will cause inaccuracy if set too high. 0 for no smoothing.") 
+
+// Map table text size
+tableTextSize = switch input_TableTextSize
+    "Tiny" => size.tiny
+    "Small" => size.small
+    "Normal" => size.normal
+    "Large" => size.large
+    "Huge" => size.huge
+
+// Map table position
+tablePosition = switch input_TablePosition
+    "Top Right" => position.top_right
+    "Top Center" => position.top_center
+    "Top Left" => position.top_left
+    "Middle Right" => position.middle_right
+    "Middle Center" => position.middle_center
+    "Middle Left" => position.middle_left
+    "Bottom Right" => position.bottom_right
+    "Bottom Center" => position.bottom_center
+    "Bottom Left" => position.bottom_left
+
+// Calculate SPY to ES or QQQ to NQ ratio
+
+t = (is_spy) ? ticker.new("AMEX", "SPY", session.extended) : ticker.new("NASDAQ", "QQQ", session.extended)
+ETFClose = request.security(t, timeframe.period, close, barmerge.gaps_on)
+CurClose = request.security(symbol = syminfo.ticker, timeframe = timeframe.period, expression = close) 
+Diff = CurClose / ETFClose
+
+// Calculate lines
+line_pt1 = ta.sma(source = (input_line_pt1 * Diff), length = input_smoothing)  
+line_pt2 = ta.sma(source = (input_line_pt2 * Diff), length = input_smoothing)
+line_pt3 = ta.sma(source = (input_line_pt3 * Diff), length = input_smoothing)
+line_pt4 = ta.sma(source = (input_line_pt4 * Diff), length = input_smoothing)
+line_pt5 = ta.sma(source = (input_line_pt5 * Diff), length = input_smoothing)
+line_pt6 = ta.sma(source = (input_line_pt6 * Diff), length = input_smoothing)
+line_pt7 = ta.sma(source = (input_line_pt7 * Diff), length = input_smoothing)
+line_pt8 = ta.sma(source = (input_line_pt8 * Diff), length = input_smoothing)
+line_pt9 = ta.sma(source = (input_line_pt9 * Diff), length = input_smoothing)
+line_pt10 = ta.sma(source = (input_line_pt10 * Diff), length = input_smoothing)
+price_etf = str.tostring(ETFClose, '#.###')
+etfvwap = request.security(t, timeframe.period, ta.vwap(input_vwap_source)) * Diff
+line_etf_vwap = if input_vwap_smoothing >= 1
+    ta.sma(source = etfvwap, length = input_vwap_smoothing)
+else
+    etfvwap
+
+// Create table
+var table InfoBox = table.new(position = tablePosition, columns = 2, rows = 2, bgcolor = color.new(color.gray, 85), frame_width = 1, frame_color = color.black)
+
+// Plot lines
+plot(line_etf_vwap, color = color.yellow, linewidth = 3, title = "VWAP")
+plot(line_pt1, color = color.yellow, linewidth = 3, title = "PT 1")
+plot(line_pt2, color = color.yellow, linewidth = 3, title = "PT 2")
+plot(line_pt3, color = color.yellow, linewidth = 3, title = "PT 3")
+plot(line_pt4, color = color.yellow, linewidth = 3, title = "PT 4")
+plot(line_pt5, color = color.yellow, linewidth = 3, title = "PT 5")
+plot(line_pt6, color = color.yellow, linewidth = 3, title = "PT 6")
+plot(line_pt7, color = color.yellow, linewidth = 3, title = "PT 7")
+plot(line_pt8, color = color.yellow, linewidth = 3, title = "PT 8")
+plot(line_pt9, color = color.yellow, linewidth = 3, title = "PT 9")
+plot(line_pt10, color = color.yellow, linewidth = 3, title = "PT 10")
+
+
+// Populate table
+t_string = is_spy ? "SPY:" : "QQQ:"
+if barstate.islast
+    table.cell(InfoBox, 0, 0, t_string, text_color = color.white, text_size = tableTextSize)
+    table.cell(InfoBox, 1, 0, price_etf, text_color = color.white, text_size = tableTextSize)
