@@ -5,21 +5,21 @@ indicator(title="SPY to ES or QQQ to NQ", shorttitle = "SPY to ES or QQQ to NQ",
 
 // Inputs
 is_spy = input.bool(defval = true, title = "Convert SPY?", tooltip = "Uncheck this box if converting QQQ to NQ instead of SPY to ES")
-input_line_pt1 = input.price(defval = 0.0 , title = "PT 1")
-input_line_pt2 = input.price(defval = 0.0 , title = "PT 2")
-input_line_pt3 = input.price(defval = 0.0 , title = "PT 3")
-input_line_pt4 = input.price(defval = 0.0 , title = "PT 4")
-input_line_pt5 = input.price(defval = 0.0 , title = "PT 5")
-input_line_pt6 = input.price(defval = 0.0 , title = "PT 6")
-input_line_pt7 = input.price(defval = 0.0 , title = "PT 7")
-input_line_pt8 = input.price(defval = 0.0 , title = "PT 8")
-input_line_pt9 = input.price(defval = 0.0 , title = "PT 9")
-input_line_pt10 = input.price(defval = 0.0 , title = "PT 10")
-input_TablePosition = input.string(defval = "Top Right", title = "Table Position", options = ["Top Right", "Top Center", "Top Left", "Middle Right", "Middle Center", "Middle Left", "Bottom Right", "Bottom Center", "Bottom Left"], tooltip = "Position of the table") 
-input_TableTextSize = input.string(defval = "Normal", title = "Table Font Size", options = ["Tiny", "Small", "Normal", "Large", "Huge"], tooltip = "Font size for the status box") 
-input_vwap_source = input.source(defval = hlc3, title = "VWAP Source", tooltip = "Source used to calculate VWAP")
-input_smoothing = input.int(defval = 100, title = "Line Smoothing", minval = 1 , maxval = 600, tooltip = "Min 1, Max 600. SMA to smooth lines, evens out the calculation flucations. VWAP is not smoothed.") 
-input_vwap_smoothing = input.int(defval = 3, title = "VWAP Smoothing", minval = 0 , maxval = 9, tooltip = "Min 0, Max 9. SMA to smooth VWAP line, evens out the calculation flucations but will cause inaccuracy if set too high. 0 for no smoothing.") 
+input_line_pt1 = input.price(group="ETF Strikes", defval = 0.0 , title = "PT 1")
+input_line_pt2 = input.price(group="ETF Strikes", defval = 0.0 , title = "PT 2")
+input_line_pt3 = input.price(group="ETF Strikes", defval = 0.0 , title = "PT 3")
+input_line_pt4 = input.price(group="ETF Strikes", defval = 0.0 , title = "PT 4")
+input_line_pt5 = input.price(group="ETF Strikes", defval = 0.0 , title = "PT 5")
+input_line_pt6 = input.price(group="ETF Strikes", defval = 0.0 , title = "PT 6")
+input_line_pt7 = input.price(group="ETF Strikes", defval = 0.0 , title = "PT 7")
+input_line_pt8 = input.price(group="ETF Strikes", defval = 0.0 , title = "PT 8")
+input_line_pt9 = input.price(group="ETF Strikes", defval = 0.0 , title = "PT 9")
+input_line_pt10 = input.price(group="ETF Strikes", defval = 0.0 , title = "PT 10")
+input_TablePosition = input.string(group="Table Settings", defval = "Top Right", title = "Table Position", options = ["Top Right", "Top Center", "Top Left", "Middle Right", "Middle Center", "Middle Left", "Bottom Right", "Bottom Center", "Bottom Left"], tooltip = "Position of the table") 
+input_TableTextSize = input.string(group="Table Settings", defval = "Normal", title = "Table Font Size", options = ["Tiny", "Small", "Normal", "Large", "Huge"], tooltip = "Font size for the status box") 
+input_vwap_source = input.source(group="VWAP Settings", defval = hlc3, title = "VWAP Source", tooltip = "Source used to calculate VWAP")
+input_smoothing = input.int(group="VWAP Settings", defval = 100, title = "Line Smoothing", minval = 1 , maxval = 600, tooltip = "Min 1, Max 600. SMA to smooth lines, evens out the calculation flucations. VWAP is not smoothed.") 
+input_vwap_smoothing = input.int(group="VWAP Settings", defval = 3, title = "VWAP Smoothing", minval = 0 , maxval = 9, tooltip = "Min 0, Max 9. SMA to smooth VWAP line, evens out the calculation flucations but will cause inaccuracy if set too high. 0 for no smoothing.") 
 
 // Map table text size
 tableTextSize = switch input_TableTextSize
@@ -61,26 +61,34 @@ line_pt9 = ta.sma(source = (input_line_pt9 * Diff), length = input_smoothing)
 line_pt10 = ta.sma(source = (input_line_pt10 * Diff), length = input_smoothing)
 price_etf = str.tostring(ETFClose, '#.###')
 etfvwap = request.security(t, timeframe.period, ta.vwap(input_vwap_source)) * Diff
-line_etf_vwap = if input_vwap_smoothing >= 1
+line_etf_vwap = if input_vwap_smoothing >= 1 
     ta.sma(source = etfvwap, length = input_vwap_smoothing)
 else
     etfvwap
+
+// Add Standard Futures VWAP
+futuresvwap = ta.vwap(input_vwap_source)
+line_futures_vwap = if input_vwap_smoothing >= 1 
+    ta.sma(source = futuresvwap, length = input_vwap_smoothing)
+else   
+    futuresvwap
 
 // Create table
 var table InfoBox = table.new(position = tablePosition, columns = 2, rows = 2, bgcolor = color.new(color.gray, 85), frame_width = 1, frame_color = color.black)
 
 // Plot lines
-plot(line_etf_vwap, color = color.yellow, linewidth = 3, title = "VWAP")
-plot(line_pt1, color = color.yellow, linewidth = 3, title = "PT 1")
-plot(line_pt2, color = color.yellow, linewidth = 3, title = "PT 2")
-plot(line_pt3, color = color.yellow, linewidth = 3, title = "PT 3")
-plot(line_pt4, color = color.yellow, linewidth = 3, title = "PT 4")
-plot(line_pt5, color = color.yellow, linewidth = 3, title = "PT 5")
-plot(line_pt6, color = color.yellow, linewidth = 3, title = "PT 6")
-plot(line_pt7, color = color.yellow, linewidth = 3, title = "PT 7")
-plot(line_pt8, color = color.yellow, linewidth = 3, title = "PT 8")
-plot(line_pt9, color = color.yellow, linewidth = 3, title = "PT 9")
-plot(line_pt10, color = color.yellow, linewidth = 3, title = "PT 10")
+plot(line_etf_vwap, color = color.fuchsia, linewidth = 3, title = "ETF VWAP")
+plot(line_futures_vwap, color = color.blue, linewidth = 3, title = "Futures VWAP")
+plot(line_pt1, color = color.white, linewidth = 3, title = "PT 1")
+plot(line_pt2, color = color.white, linewidth = 3, title = "PT 2")
+plot(line_pt3, color = color.white, linewidth = 3, title = "PT 3")
+plot(line_pt4, color = color.white, linewidth = 3, title = "PT 4")
+plot(line_pt5, color = color.white, linewidth = 3, title = "PT 5")
+plot(line_pt6, color = color.white, linewidth = 3, title = "PT 6")
+plot(line_pt7, color = color.white, linewidth = 3, title = "PT 7")
+plot(line_pt8, color = color.white, linewidth = 3, title = "PT 8")
+plot(line_pt9, color = color.white, linewidth = 3, title = "PT 9")
+plot(line_pt10, color = color.white, linewidth = 3, title = "PT 10")
 
 
 // Populate table
